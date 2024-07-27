@@ -1,15 +1,15 @@
 from Contacto import Contacto
 
-class ContactoTrabajo(Contacto):
-    def __init__(self, nombreCompleto, email, numero,empresa,instagram):
-        super().__init__(nombreCompleto, email, numero)
+class Contactotrabajo(Contacto):
+    def __init__(self,id, nombreCompleto, email, numero,empresa,instagram):
+        super().__init__(id ,nombreCompleto, email, numero)
         self._empresa = empresa
         self._instagram = instagram
 
     def mostrar_info(self):
         super().mostrar_info()
-        print("empresa", self._empresa,
-              "instagram",self._instagram)
+        print(f"Empresa:{self._empresa}\nInstagram:{self._instagram}\n")
+      
     
     @property
     def empresa(self):
