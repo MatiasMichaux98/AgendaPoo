@@ -4,7 +4,7 @@ from ContactoPersonal import Contactopersonal
 from ContactoTrabajo import Contactotrabajo
 
 
-def obtner_conexion():
+def obtener_conexion():
     try:
         conexion = psycopg2.connect(
             user = 'postgres',
@@ -35,7 +35,8 @@ def menu_opciones():
         3. Editar Contactos
         4. Eliminar Contacto
         5. Agregar a Favorito
-        6. Salir
+        6. Ver Contactos Favoritos
+        7. Salir
         ==============================
         """)
 def menu_opciones2():
@@ -51,7 +52,7 @@ def menu_opciones2():
 def menu_opciones3():
         print("""
         ==============================
-             MENÚ  MOSTRARCONTACTO
+             MENÚ CONTACTOS
         ==============================
         1. Contacto Personal
         2. Contacto Trabajo
@@ -61,15 +62,15 @@ def menu_opciones3():
 
 
 def Agregar_ContactoPersonal(contacto):
-    conexion, cursor = obtner_conexion()
+    conexion, cursor = obtener_conexion()
     if conexion and cursor:
         try:
-            cursor.execute("""
-                INSERT INTO "contactoPersonal"("nombreCompleto", email, numero, pais,genero)
-                VALUES (%s,%s,%s,%s,%s)
+            cursor.execute('''
+                INSERT INTO "contactopersonal"(nombrecompleto, email, numero, pais, genero, favorito)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id 
-            """,(contacto.nombreCompleto, contacto.email, contacto.numero,
-                contacto.pais, contacto.genero))
+            ''', (contacto.nombrecompleto, contacto.email, contacto.numero,
+                contacto.pais, contacto.genero, contacto.favorito))
 
             conexion.commit()
             print("ContactoPersonal agregado exitosamente!!!")
@@ -78,18 +79,19 @@ def Agregar_ContactoPersonal(contacto):
             conexion.rollback()
             print(f"Error al agregar el contacto {e}")
         finally:
-            cerrar_session(conexion,cursor)
+            cerrar_session(conexion, cursor)
+
 
 def agregar_ContactoTrabajo(contacto):
-    conexion , cursor = obtner_conexion()
+    conexion , cursor = obtener_conexion()
     if conexion and cursor:
         try:
             cursor.execute("""
-            INSERT INTO "contactoTrabajo"("nombreCompleto", email, numero,empresa,instagram)
+            INSERT INTO "contactotrabajo"(nombreCompleto, email, numero,empresa,instagram,favorito)
             VALUES (%s,%s,%s,%s,%s)
             RETURNING id
-            """,(contacto.nombreCompleto , contacto.email, contacto.numero,
-                contacto.empresa, contacto.instagram))
+            """,(contacto.nombrecompleto , contacto.email, contacto.numero,
+                contacto.empresa, contacto.instagram,contacto.favorito))
             conexion.commit()
             print(f"ContactoTrabajo agregado exitosamente!!! ")
             
@@ -101,13 +103,13 @@ def agregar_ContactoTrabajo(contacto):
 
 
 def mostrar_contactosPersonal():
-    conexion, cursor = obtner_conexion()
+    conexion, cursor = obtener_conexion()
     if conexion and cursor:
         try:
-            cursor.execute('SELECT * FROM "contactoPersonal" ORDER BY "id" ASC')
+            cursor.execute('SELECT * FROM "contactopersonal" ORDER BY "id" ASC')
             contactos = cursor.fetchall()
             for row in contactos:
-                contacto_personal = Contactopersonal(row[0], row[1], row[2], row[3], row[4], row[5])
+                contacto_personal = Contactopersonal(row[0], row[1], row[2], row[3], row[4], row[5],row[6])  
                 contacto_personal.mostrar_info()
         except Exception as e:
             print(f"Error al mostrar contactos {e}")
@@ -115,13 +117,13 @@ def mostrar_contactosPersonal():
             cerrar_session(conexion,cursor)
 
 def mostrar_contactosTrabajo():
-    conexion, cursor = obtner_conexion()
+    conexion, cursor = obtener_conexion()
     if conexion and cursor:
         try:
-            cursor.execute('SELECT * FROM "contactoTrabajo" ORDER BY "id" ASC')
+            cursor.execute('SELECT * FROM "contactotrabajo" ORDER BY "id" ASC')
             contactos = cursor.fetchall()
             for row in contactos:
-                contacto_trabajo = Contactotrabajo(row[0], row[1], row[2], row[3], row[4], row[5])
+                contacto_trabajo = Contactotrabajo(row[0], row[1], row[2], row[3], row[4], row[5],row[6])
                 contacto_trabajo.mostrar_info()
         except Exception as e:
             print(f"Error al mostrar contactos {e}")
@@ -129,14 +131,14 @@ def mostrar_contactosTrabajo():
             cerrar_session(conexion,cursor)
 
 def actualizar_contactosPersonal():
-    conexion , cursor = obtner_conexion()
+    conexion , cursor = obtener_conexion()
     if conexion and cursor:
         try:
             contacto_id = (input("Ingrese el ID del contacto a modificar: "))
         except ValueError:
                 print("ID INCORRECTO. Por favor,Intentelo nuevamente.")
 
-        cursor.execute('SELECT * FROM "contactoPersonal" WHERE id = %s', (contacto_id,))
+        cursor.execute('SELECT * FROM "contactopersonal" WHERE id = %s', (contacto_id,))
         if cursor.fetchone() is None:
             print(f"El ID {contacto_id} no existe en la base de datos.")
             return
@@ -149,7 +151,7 @@ def actualizar_contactosPersonal():
                 genero = input("Digite nuevo Genero:-> ")
 
                 query = '''
-                UPDATE "contactoPersonal"
+                UPDATE "contactopersonal"
                 SET "nombreCompleto" = %s, email = %s, numero = %s, pais = %s, genero = %s
                 WHERE id = %s
             '''
@@ -162,14 +164,14 @@ def actualizar_contactosPersonal():
             finally:
                 cerrar_session(conexion,cursor)
 def actualizar_contactosTrabajo():
-    conexion , cursor = obtner_conexion()
+    conexion , cursor = obtener_conexion()
     if conexion and cursor:
         try:
             contactoId = input("Digite el ID del contacto a modificar: -> ")
         except ValueError:
             print(f"Error id incorrecto, vuelva a intentar!!")
 
-        cursor.execute('SELECT * FROM "contactoTrabajo" WHERE id = %s', (contactoId))
+        cursor.execute('SELECT * FROM "contactotrabajo" WHERE id = %s', (contactoId))
         if cursor.fetchone() is None:
             print(f"Error el id: {contactoId} no existe en la base de datos:")
             return
@@ -187,14 +189,71 @@ def actualizar_contactosTrabajo():
                 parametros=(nombreCompleto, email,numero,empresa,instagram)
 
                 cursor.execute(query,parametros)
-                print("Actualizacion contactoTrabajo exitosa!!!")
+                print("Actualizacion contactotrabajo exitosa!!!")
                 conexion.commit()
             except Exception as e: 
                 print(f"Error al actulizar contacto!! {e} ")
             finally:
                 cerrar_session(conexion, cursor)
+def eliminar_contactoPersonal():
+    conexion, cursor = obtener_conexion()
+    if conexion and cursor:
+        id = input("Digite un id a eliminar: --> ")
+        cursor.execute('SELECT * FROM "contactopersonal" WHERE id = %s ' ,(id))
+        if cursor.fetchone() is None:
+            print(f"Error el id {id} no existe en la base de datos ")
+            return 
+        try:
+            query = '''DELETE from "contactopersonal" WHERE id = %s'''
+            parametro = (id)
+            cursor.execute(query,parametro)
+            print("Contacto eliminado exitosamente!!!")
+            conexion.commit()
+        except Exception as e:
+            print(f"error al eliminar usuario {e}")
+        finally:
+            cerrar_session(conexion, cursor)  
+def eliminar_contactoTrabajo():
+    conexion, cursor = obtener_conexion()
+    if conexion and cursor:
+        id = input("Digite un id a eliminar: --> ")
+        cursor.execute('SELECT * FROM "contactotrabajo" WHERE id = %s ' ,(id))
+        if cursor.fetchone() is None:
+            print(f"Error el id {id} no existe en la base de datos ")
+            return 
+        try:
+            query = '''DELETE from "contactotrabajo" WHERE id = %s'''
+            parametro = (id)
+            cursor.execute(query,parametro)
+            print("Contacto eliminado exitosamente!!!")
+            conexion.commit()
+        except Exception as e:
+            print(f"error al eliminar usuario {e}")
+        finally:
+            cerrar_session(conexion, cursor)        
 
-            
+def agregar_FavoritoPersonal():
+    conexion , cursor = obtener_conexion()
+    if conexion and cursor:
+        try:
+            fav_id = input("Digite un id para agregar a favorito: --> ")
+        except ValueError:
+                print("Error, vuelva a intentar!! ")
+        cursor.execute('SELECT * FROM "contactopersonal" WHERE id = %s',(fav_id))
+        if cursor.fetchone() is None:
+            print(f"Erro el id {fav_id} no existe en la base de datos ")
+            return
+        else: 
+            try:
+                query=('UPDATE "contactopersonal" SET favorito= True WHERE id= %s ')
+                paramentros=(fav_id )
+                cursor.execute(query, paramentros)
+                print(f"Contacto con el id {fav_id} agregado a favorito con exito!!! ")
+                conexion.commit()
+            except Exception as e:
+                print(f"Error al agregar a favorito {e}")
+            finally:
+                cerrar_session(conexion, cursor)
             
 def MenuMain():
     banderas = True
@@ -212,20 +271,24 @@ def MenuMain():
                     nombreCompleto = input("Ingrese el nombre completo: ").upper()
                     email = input("Ingrese el email: ").upper()
                     numero = input("Ingrese el número: ").upper()
-                    pais = input("Ingrese el país: ").upper()
+                    pais = input("Ingrese el país: ").upper()                    
                     genero = input("Ingrese el género F/M: ").upper()
-                    contacto = Contactopersonal(nombreCompleto, email, numero, pais, genero)
-                    Agregar_ContactoPersonal(contacto)#llama a la funcion 
+                    favorito = False 
+                    contacto = Contactopersonal(None, nombreCompleto, email, numero, pais, genero,favorito)
+                    Agregar_ContactoPersonal(contacto)  
                     menu_opciones()
+                    break
                 elif numero_opc2 == "2":
                     nombreCompleto = input("Ingrese el nombre completo: ").upper()
                     email = input("Ingrese el email: ").upper()
                     numero = input("Ingrese el número: ").upper()
                     empresa = input("Ingrese La empresa: ").upper()
                     instagram = input("Ingrese el instagram: ").upper()
-                    contacto = Contactotrabajo(nombreCompleto, email, numero, empresa, instagram)
-                    agregar_ContactoTrabajo(contacto)#llama a la funcion 
+                    favorito = False
+                    contacto = Contactotrabajo(None,nombreCompleto, email, numero, empresa, instagram,favorito)
+                    agregar_ContactoTrabajo(contacto)
                     menu_opciones()
+                    break
                 elif numero_opc2 == "3":
                     print("volviendo al MenuMain!!")
                     break
@@ -259,8 +322,38 @@ def MenuMain():
                     break
                 else:
                     print("Opcion Incorrecta , vuelve a intentar ")
+        elif numero_opc == "4":
+            while True:
+                menu_opciones3()
+                numero_opc5 = input("Digite una opcion: --> ")
+                if numero_opc5 == "1":
+                    eliminar_contactoPersonal()
+                elif numero_opc5 == "2":
+                    eliminar_contactoTrabajo()
+                elif numero_opc5 == "3":
+                    print("Volviendo al MenuMain!!")
+                    menu_opciones()
+                    break
+                else:
+                    print("Opcion incorrecta , vuelva a intentar ")
+        elif numero_opc == "5":
+            while True:
+                menu_opciones3()
+                numero_opc6 = input("Digite una opcion: --> ")
+                if numero_opc6 == "1":
+                    agregar_FavoritoPersonal()
+                elif numero_opc6 == "2":
+                    pass
+                elif numero_opc6 == "3":
+                    print("Volviendo al MenuMain!! ")
+                    menu_opciones()
+                    break
+                else:
+                    print("opcion incorrecta,vuelva a intentar ")
+
         else:
              print("Error vuelva a digitar un numero ")
+
 
             
 

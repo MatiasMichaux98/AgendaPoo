@@ -1,20 +1,21 @@
 class Contacto:
-    def __init__(self,id,nombreCompleto,email,numero ):
+    def __init__(self, id=None, nombrecompleto=None, email=None, numero=None, favorito=False):
         self._id = id
-        self._nombreCompleto = nombreCompleto
+        self._nombrecompleto = nombrecompleto
         self._email = email
         self._numero = numero
+        self._favorito = favorito
 
     def mostrar_info(self):
-        print(f"ID: {self._id}\nNombre:{self._nombreCompleto}\nEmail:{self._email}\nNúmero:{self._numero}")
+        print(f"ID: {self._id}\nNombre:{self._nombrecompleto}\nEmail:{self._email}\nNúmero:{self._numero}\nFavorito:{self._favorito}")
 
     @property
-    def nombreCompleto(self):
-        return self._nombreCompleto
+    def nombrecompleto(self):
+        return self._nombrecompleto
     
-    @nombreCompleto.setter
-    def nombreCompleto(self,nombreCompleto):
-        self._nombreCompleto = nombreCompleto
+    @nombrecompleto.setter
+    def nombrecompleto(self,nombrecompleto):
+        self._nombrecompleto = nombrecompleto
 
     @property
     def email(self):
@@ -30,6 +31,14 @@ class Contacto:
     @numero.setter
     def numero(self, numero):
         self._numero = numero 
+
+    @property
+    def favorito(self):
+        return self._favorito
+    
+    @favorito.setter
+    def favorito(self, favorito):
+        self._favorito = favorito 
 
 
 

@@ -1,8 +1,8 @@
 from Contacto import Contacto
 
 class Contactotrabajo(Contacto):
-    def __init__(self,id, nombreCompleto, email, numero,empresa,instagram):
-        super().__init__(id ,nombreCompleto, email, numero)
+    def __init__(self,id, nombrecompleto, email, numero,empresa,instagram,favorito):
+        super().__init__(id ,nombrecompleto, email, numero,favorito)
         self._empresa = empresa
         self._instagram = instagram
 
