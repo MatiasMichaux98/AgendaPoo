@@ -6,6 +6,9 @@ class Contactotrabajo(Contacto):
         self._empresa = empresa
         self._instagram = instagram
 
+    def get_contact_info(self):
+        return f"{self.nombrecompleto} ({self.instagram}) en {self.empresa} - {self.numero}"
+
     def mostrar_info(self):
         super().mostrar_info()
         print(f"Empresa:{self._empresa}\nInstagram:{self._instagram}\n")

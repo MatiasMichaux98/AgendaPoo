@@ -6,6 +6,10 @@ class Contactopersonal(Contacto):
         self._pais = pais
         self._genero = genero
 
+
+    def get_contact_info(self):
+        return f"{self.nombrecompleto} ({self.genero}) - {self.numero},{self.pais}"
+    
     def mostrar_info(self):
         super().mostrar_info()
         print(f"Pais:{self._pais}\nGenero:{self._genero}\n")

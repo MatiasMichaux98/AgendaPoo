@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 class Contacto:
     def __init__(self, id=None, nombrecompleto=None, email=None, numero=None, favorito=False):
         self._id = id
@@ -5,6 +7,10 @@ class Contacto:
         self._email = email
         self._numero = numero
         self._favorito = favorito
+
+    @abstractmethod
+    def get_contact_info(self):
+        pass
 
     def mostrar_info(self):
         print(f"ID: {self._id}\nNombre:{self._nombrecompleto}\nEmail:{self._email}\nNúmero:{self._numero}\nFavorito:{self._favorito}")

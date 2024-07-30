@@ -2,7 +2,7 @@ import psycopg2
 
 from ContactoPersonal import Contactopersonal
 from ContactoTrabajo import Contactotrabajo
-
+from Contacto import Contacto
 
 def obtener_conexion():
     try:
@@ -35,8 +35,9 @@ def menu_opciones():
         3. Editar Contactos
         4. Eliminar Contacto
         5. Agregar a Favorito
-        6. Ver Contactos Favoritos
-        7. Salir
+        6. Eliminar de Favorito
+        7. Ver Contactos Favoritos
+        8. Salir
         ==============================
         """)
 def menu_opciones2():
@@ -88,7 +89,7 @@ def agregar_ContactoTrabajo(contacto):
         try:
             cursor.execute("""
             INSERT INTO "contactotrabajo"(nombreCompleto, email, numero,empresa,instagram,favorito)
-            VALUES (%s,%s,%s,%s,%s)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """,(contacto.nombrecompleto , contacto.email, contacto.numero,
                 contacto.empresa, contacto.instagram,contacto.favorito))
@@ -102,29 +103,26 @@ def agregar_ContactoTrabajo(contacto):
             cerrar_session(conexion,cursor)
 
 
-def mostrar_contactosPersonal():
+def mostrar_contactos(tipo_contacto):
     conexion, cursor = obtener_conexion()
     if conexion and cursor:
-        try:
-            cursor.execute('SELECT * FROM "contactopersonal" ORDER BY "id" ASC')
-            contactos = cursor.fetchall()
-            for row in contactos:
-                contacto_personal = Contactopersonal(row[0], row[1], row[2], row[3], row[4], row[5],row[6])  
-                contacto_personal.mostrar_info()
-        except Exception as e:
-            print(f"Error al mostrar contactos {e}")
-        finally:
-            cerrar_session(conexion,cursor)
+        tablas_clases = {
+            "1": ("contactopersonal", Contactopersonal),
+            "2": ("contactotrabajo", Contactotrabajo)
+        }
+        
+        if tipo_contacto not in tablas_clases:
+            print("ERROR, tipo de contacto invalido")
+            cerrar_session(conexion, cursor)
+            return
 
-def mostrar_contactosTrabajo():
-    conexion, cursor = obtener_conexion()
-    if conexion and cursor:
+        tabla, clase = tablas_clases[tipo_contacto]
         try:
-            cursor.execute('SELECT * FROM "contactotrabajo" ORDER BY "id" ASC')
+            cursor.execute(f'SELECT * FROM {tabla} ORDER BY "id" ASC')
             contactos = cursor.fetchall()
             for row in contactos:
-                contacto_trabajo = Contactotrabajo(row[0], row[1], row[2], row[3], row[4], row[5],row[6])
-                contacto_trabajo.mostrar_info()
+                contacto_personal = clase(*row)
+                contacto_personal.mostrar_info()
         except Exception as e:
             print(f"Error al mostrar contactos {e}")
         finally:
@@ -195,58 +193,61 @@ def actualizar_contactosTrabajo():
                 print(f"Error al actulizar contacto!! {e} ")
             finally:
                 cerrar_session(conexion, cursor)
-def eliminar_contactoPersonal():
+def eliminar_contacto(tipo_contacto):
     conexion, cursor = obtener_conexion()
     if conexion and cursor:
-        id = input("Digite un id a eliminar: --> ")
-        cursor.execute('SELECT * FROM "contactopersonal" WHERE id = %s ' ,(id))
-        if cursor.fetchone() is None:
-            print(f"Error el id {id} no existe en la base de datos ")
-            return 
         try:
-            query = '''DELETE from "contactopersonal" WHERE id = %s'''
-            parametro = (id)
-            cursor.execute(query,parametro)
-            print("Contacto eliminado exitosamente!!!")
-            conexion.commit()
-        except Exception as e:
-            print(f"error al eliminar usuario {e}")
-        finally:
-            cerrar_session(conexion, cursor)  
-def eliminar_contactoTrabajo():
-    conexion, cursor = obtener_conexion()
-    if conexion and cursor:
-        id = input("Digite un id a eliminar: --> ")
-        cursor.execute('SELECT * FROM "contactotrabajo" WHERE id = %s ' ,(id))
-        if cursor.fetchone() is None:
-            print(f"Error el id {id} no existe en la base de datos ")
-            return 
-        try:
-            query = '''DELETE from "contactotrabajo" WHERE id = %s'''
-            parametro = (id)
-            cursor.execute(query,parametro)
-            print("Contacto eliminado exitosamente!!!")
-            conexion.commit()
-        except Exception as e:
-            print(f"error al eliminar usuario {e}")
-        finally:
-            cerrar_session(conexion, cursor)        
+             id = input("Digite un id a eliminar: --> ")
+        except ValueError:
+            print("Error , vuelva a intentar ")
 
-def agregar_FavoritoPersonal():
+        if tipo_contacto == "1":
+            tabla = "contactopersonal"
+        elif tipo_contacto == "2":
+            tabla = "contactotrabajo"
+        else:
+            print("ERROR , tipo de contacto invalido")
+            cerrar_session(conexion, cursor)
+            return
+        cursor.execute(f'SELECT * FROM "{tabla}" WHERE id = %s ' ,(id))
+        if cursor.fetchone() is None:
+            print(f"Error el id {id} no existe en la base de datos ")
+            return 
+        else:
+            try:
+                query = f'''DELETE from "{tabla}" WHERE id = %s'''
+                parametro = (id)
+                cursor.execute(query,parametro)
+                print("Contacto eliminado exitosamente!!!")
+                conexion.commit()
+            except Exception as e:
+                print(f"error al eliminar usuario {e}")
+            finally:
+                cerrar_session(conexion, cursor)        
+
+def agregar_favorito(tipo_contacto):
     conexion , cursor = obtener_conexion()
     if conexion and cursor:
         try:
             fav_id = input("Digite un id para agregar a favorito: --> ")
         except ValueError:
                 print("Error, vuelva a intentar!! ")
-        cursor.execute('SELECT * FROM "contactopersonal" WHERE id = %s',(fav_id))
+        if tipo_contacto == "1":
+            tabla = "contactopersonal"
+        elif tipo_contacto == "2":
+            tabla = "contactotrabajo"
+        else:
+            print("Error, tipo de contacto no válido.")
+            cerrar_session(conexion, cursor)
+            return
+        cursor.execute(f'SELECT * FROM {tabla} WHERE id = %s',(fav_id,))
         if cursor.fetchone() is None:
             print(f"Erro el id {fav_id} no existe en la base de datos ")
             return
         else: 
             try:
-                query=('UPDATE "contactopersonal" SET favorito= True WHERE id= %s ')
-                paramentros=(fav_id )
+                query=(f'UPDATE "{tabla}" SET favorito= True WHERE id= %s ')
+                paramentros=(fav_id, )
                 cursor.execute(query, paramentros)
                 print(f"Contacto con el id {fav_id} agregado a favorito con exito!!! ")
                 conexion.commit()
@@ -254,13 +255,70 @@ def agregar_FavoritoPersonal():
                 print(f"Error al agregar a favorito {e}")
             finally:
                 cerrar_session(conexion, cursor)
+def mostra_ContactoFavorito():
+    conexion, cursor = obtener_conexion()
+    if conexion and cursor:
+        
+        try:
+            cursor.execute('''
+                SELECT * FROM "contactopersonal" WHERE "favorito" = true
+                UNION
+                SELECT * FROM "contactotrabajo" WHERE "favorito" = true
+                ORDER BY "id" ASC
+            ''')        
+            contactos = cursor.fetchall()
+            for row in contactos:
+                if len(row) == 7: 
+                    contacto = Contactopersonal(*row)
+                elif len(row) == 7:  
+                    contacto = Contactotrabajo(*row)     
+                else:
+                    print(f"Formato de datos inesperado: {row}")
+                    continue           
+                contacto.mostrar_info()
+        except Exception as e:
+            print(f"Error al mostrar contactos {e}")
+        finally:
+            cerrar_session(conexion,cursor)
+def eliminar_favorito(tipo_contacto):
+    conexion, cursor = obtener_conexion()
+    if conexion and cursor:
+        try:
+             fav_id = input("Digite un id a eliminar: --> ")
+        except ValueError:
+            print("Error , vuelva a intentar ")
+
+        if tipo_contacto == "1":
+            tabla = "contactopersonal"
+        elif tipo_contacto == "2":
+            tabla = "contactotrabajo"
+        else:
+            print("ERROR , tipo de contacto invalido")
+            cerrar_session(conexion, cursor)
+            return
+        cursor.execute(f'SELECT * FROM {tabla} WHERE id = %s',(fav_id,))
+        if cursor.fetchone() is None:
+            print(f"Erro el id {fav_id} no existe en la base de datos ")
+            return
+        else: 
+            try:
+                query=(f'UPDATE "{tabla}" SET favorito= False WHERE id= %s ')
+                paramentros=(fav_id, )
+                cursor.execute(query, paramentros)
+                print(f"Contacto con el id {fav_id} agregado a favorito con exito!!! ")
+                conexion.commit()
+            except Exception as e:
+                print(f"Error al agregar a favorito {e}")
+            finally:
+                cerrar_session(conexion, cursor)  
+
             
 def MenuMain():
     banderas = True
     menu_opciones()
     while banderas:
         numero_opc = input("Digite un número: --> ")
-        if numero_opc == "6":
+        if numero_opc == "8":
             print("Salida con éxito !!")
             banderas = False
         elif numero_opc == "1":
@@ -297,12 +355,10 @@ def MenuMain():
         elif numero_opc == "2":
             while True: 
                 menu_opciones3()
-                numero_opc3 = input("Digite un numero: --> ")
-                if numero_opc3 == "1":
-                    mostrar_contactosPersonal()
-                elif numero_opc3 == "2":
-                    mostrar_contactosTrabajo()
-                elif numero_opc3 == "3":
+                tipo_contacto = input("Digite un numero: --> ")
+                if tipo_contacto in ["1", "2"]: 
+                    mostrar_contactos(tipo_contacto)
+                elif tipo_contacto == "3":
                     print("volviendo al MenuMain!!")
                     menu_opciones()
                     break
@@ -325,12 +381,10 @@ def MenuMain():
         elif numero_opc == "4":
             while True:
                 menu_opciones3()
-                numero_opc5 = input("Digite una opcion: --> ")
-                if numero_opc5 == "1":
-                    eliminar_contactoPersonal()
-                elif numero_opc5 == "2":
-                    eliminar_contactoTrabajo()
-                elif numero_opc5 == "3":
+                tipo_contacto = input("Digite una opcion: --> ")
+                if tipo_contacto in ["1", "2"]:
+                    eliminar_contacto(tipo_contacto)
+                elif tipo_contacto == "3":
                     print("Volviendo al MenuMain!!")
                     menu_opciones()
                     break
@@ -339,22 +393,31 @@ def MenuMain():
         elif numero_opc == "5":
             while True:
                 menu_opciones3()
-                numero_opc6 = input("Digite una opcion: --> ")
-                if numero_opc6 == "1":
-                    agregar_FavoritoPersonal()
-                elif numero_opc6 == "2":
-                    pass
-                elif numero_opc6 == "3":
+                tipo_contacto = input("Ingrese el tipo de contacto (personal/trabajo): ").lower()
+                if tipo_contacto in ["1", "2"]:
+                    agregar_favorito(tipo_contacto)
+                elif tipo_contacto == "3":
                     print("Volviendo al MenuMain!! ")
                     menu_opciones()
                     break
                 else:
                     print("opcion incorrecta,vuelva a intentar ")
-
+        elif numero_opc == "6":
+            while True:
+                menu_opciones3()
+                tipo_contacto = input("Digite una opcion ")
+                if tipo_contacto in ["1", "2"]:
+                    eliminar_favorito(tipo_contacto)
+                elif tipo_contacto == "3":
+                    print("volviendo al menu")
+                    menu_opciones()
+                    break
+        elif numero_opc == "7":
+            print("=== CONTACTOS - FAVORITOS ===")
+            mostra_ContactoFavorito()
+            menu_opciones()
+        
         else:
              print("Error vuelva a digitar un numero ")
-
-
-            
 
 MenuMain()
